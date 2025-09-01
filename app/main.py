@@ -124,7 +124,7 @@ if __name__ == "__main__":
 
     try:
         # Запуск веб-сервера
-        serve(app, host="0.0.0.0", port=8080)
+        serve(app, host="0.0.0.0", port=settings.PORT)
     except (KeyboardInterrupt, SystemExit):
         # Корректное завершение работы планировщика
         scheduler.shutdown()

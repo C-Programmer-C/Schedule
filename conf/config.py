@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     SCAN_INTERVAL: int
     LIMIT_PROCESS_TASKS: int
     BOT_ID: int
+    PORT: int = 8080
 
     class Config:
         env_file = str(Path(__file__).resolve().parent.parent / ".env")
