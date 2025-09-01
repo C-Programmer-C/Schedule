@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional, Union, Any
 
 from conf.config import settings
 from flask import jsonify
@@ -114,20 +114,36 @@ def build_mention_span(person_id: int, fullname: str) -> str:
     return (
         f'<span data-personid="{person_id}" data-type="user-mention">{fullname}</span>'
     )
+def collect_manager_ids(managers_info: dict) -> List[dict]:
+    """
+    Собрать поле id у каждого менеджера.
+    Возвращает список id менеджеров.
+    """
+    if not managers_info:
+        return []
+    first_manager_info = managers_info.get("first_manager")
+    second_manager_info = managers_info.get("second_manager")
+    if not first_manager_info or not second_manager_info:
+        return []
+    first_manager_id = first_manager_info.get("id")
+    second_manager_id = second_manager_info.get("id")
+
+    if not isinstance(first_manager_id, int) or not isinstance(second_manager_id, int):
+        return []
+
+    return [{"id": i} for i in (first_manager_id, second_manager_id) if i is not None]
 
 
-def collect_manager_mentions(members_info: Dict) -> List[str]:
+def collect_manager_mentions(members_info: Dict[str, Dict[str, Any]]) -> List[str]:
     """
     Собрать упоминания для первого и второго менеджера (если есть и полны данные).
     Возвращает список упоминаний (может быть пустым, 1 или 2 элемента).
     """
     mentions: List[str] = []
-
     for key in ("first_manager", "second_manager"):
         mgr = members_info.get(key) or {}
         mgr_id = mgr.get("id")
         mgr_fullname = mgr.get("fullname")
-        # Включаем менеджера только если есть и id, и fullname
         if mgr_id and mgr_fullname:
             mentions.append(build_mention_span(mgr_id, mgr_fullname))
     return mentions

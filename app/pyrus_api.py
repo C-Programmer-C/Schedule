@@ -1,11 +1,11 @@
 import functools
 import logging
 import time
-from typing import Type
+from typing import Type, List
 import requests
 from app.lock_utils import unlock_task
 from conf.config import settings
-from app.utils import build_mention_span, collect_manager_mentions
+from app.utils import build_mention_span, collect_manager_mentions, collect_manager_ids
 
 AUTH_URL = "https://accounts.pyrus.com/api/v4/auth"
 
@@ -136,7 +136,7 @@ def remove_bot_from_subscribers(task_id: int, token: str, timeout: int = 30):
         resp = requests.post(url, headers=headers, timeout=timeout, json=body)
         resp.raise_for_status()
     except requests.RequestException as e:
-        raise APIError(f"Couldn't send a comment for the issue #{task_id}: {e}") from e
+        raise APIError(f"Couldn't removed bot from subscribers for the issue #{task_id}: {e}") from e
 
     data = parse_json_response(resp, context="comments")
 
@@ -284,6 +284,30 @@ def get_responsible(task_id: int, token: str, timeout: int = 30) -> dict:
         "fullname": fullname
     }
 
+@retry_on_exception(tries=3, delay=30,
+                    exceptions=(RuntimeError, requests.RequestException), unlock_on_fail=True)
+def add_managers_to_subscribers(task_id: int, token: str, ids_approvals: List[dict[str, int]], timeout: int = 30):
+    headers = {"Authorization": f"Bearer {token}"}
+    url = build_comments_api_url(task_id)
+
+    body = {
+        "subscribers_added": ids_approvals
+    }
+    try:
+        resp = requests.post(url, headers=headers, timeout=timeout, json=body)
+        resp.raise_for_status()
+    except requests.RequestException as e:
+        raise APIError(f"Couldn't add managers_to_subscribers for the issue #{task_id}: {e}") from e
+
+    data = parse_json_response(resp, context="comments")
+
+    if "task" in data and data["task"]:
+        logger.info("managers successfully added to subscribers.")
+        return True
+
+    raise APIError(f"Couldn't send comment: invalid API response #{task_id}: {data}")
+
+
 @retry_on_exception(
     tries=3,
     delay=30.0,
@@ -294,9 +318,26 @@ def send_comment(token: str, task_id: int, text: str, members_info: dict, timeou
     """Отправить комментарий в задачу с упоминанием сотрудника."""
     headers = {"Authorization": f"Bearer {token}"}
     url = build_comments_api_url(task_id)
-    user_info = members_info.get("user") or {}
+
+    manager_mentions = None
 
     managers_info = members_info.get("manager") or {}
+
+    if managers_info:
+
+        managers_ids = collect_manager_ids(managers_info)
+
+        if not managers_ids:
+            raise APIError(f"managers_ids list is empty for the task #{task_id}")
+
+        res = add_managers_to_subscribers(task_id, token, managers_ids)
+
+        if not res:
+            raise APIError(f"Request is not done in the issue #{task_id}")
+
+        manager_mentions = collect_manager_mentions(managers_info)
+
+    user_info = members_info.get("user") or {}
 
     user_id = user_info.get("id") or members_info.get("id")
     user_fullname = user_info.get("fullname") or members_info.get("fullname")
@@ -306,13 +347,12 @@ def send_comment(token: str, task_id: int, text: str, members_info: dict, timeou
 
     user_mention = build_mention_span(user_id, user_fullname)
 
-    manager_mentions = collect_manager_mentions(managers_info)
+    mentions_part = ", ".join([user_mention] + manager_mentions) if manager_mentions else user_mention
 
-    mentions_part = ", ".join([user_mention] + manager_mentions)
     formatted_text = f"{mentions_part}, {text}"
 
     body = {"formatted_text": formatted_text}
-    if not body:
+    if not formatted_text:
         raise RuntimeError(f"An error occurred when forming the request body for creating a comment in the issue. #{task_id}")
 
     try:

@@ -2,8 +2,6 @@ from conf.logging_config import conf_logger
 import logging
 import sqlite3
 from datetime import timezone
-
-from conf.config import settings
 from dateutil.parser import isoparse
 from flask import Flask, jsonify, request
 from waitress import serve  

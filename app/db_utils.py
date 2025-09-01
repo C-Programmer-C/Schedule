@@ -168,26 +168,32 @@ def delete_task(task_id: int):
 
 def bump_step_and_reschedule(task_id: int, step: int, tz_name: str = "Europe/Moscow"):
     """
-    Обновляет step и ставит next_run_at на ближайший будущий 10:40 по tz_name (MSK по умолчанию).
-    Всегда игнорирует любые относительные offsets — всегда назначаем 10:40 (сегодня или завтра).
+    Обновляет step и ставит next_run_at на ближайший будущий 11:00 по tz_name (MSK по умолчанию).
+    Всегда игнорирует любые относительные offsets — всегда назначаем 11:00.
     """
     conn = db_connect()
     try:
         try:
             tz = ZoneInfo(tz_name)
         except Exception:
+            logger.warning("ZoneInfo('%s') не найдена, используем UTC", tz_name)
             tz = timezone.utc
 
         now_local = datetime.now(tz)
-        today_1040 = datetime.combine(now_local.date(), time(10, 40), tzinfo=tz)
+        today_1100 = datetime.combine(now_local.date(), time(11, 00), tzinfo=tz)
 
-        if now_local < today_1040:
-            next_local = today_1040
-        else:
-            next_local = today_1040 + timedelta(days=1)
+        next_local = today_1100 + timedelta(days=1)
 
-        # сохранить в UTC (как у вас было раньше)
         next_run_utc = next_local.astimezone(timezone.utc)
+
+        logger.debug(
+            "[task_id=%s] next_run_local=%s (%s) | next_run_utc=%s | now_local=%s | now_utc=%s",
+            task_id,
+            next_local.isoformat(), tz.key,
+            next_run_utc.isoformat(),
+            datetime.now(tz).isoformat(),
+            datetime.now(timezone.utc).isoformat()
+        )
 
         conn.execute(
             "UPDATE active_tasks SET step=?, next_run_at = ?, processing = 0, locked_at = NULL WHERE task_id = ?",

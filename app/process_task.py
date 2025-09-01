@@ -1,7 +1,8 @@
 import logging
 
 from app.lock_utils import unlock_task
-from app.pyrus_api import get_responsible, get_member, bot_is_subscriber, remove_bot_from_subscribers, get_task
+from app.pyrus_api import get_responsible, get_member, bot_is_subscriber, remove_bot_from_subscribers, get_task, \
+    APIError
 from app.texts import Texts
 from app.db_utils import cleanup_task
 from conf.config import settings
@@ -39,10 +40,6 @@ def process_task(task_id: int, token: str):
         step = row["step"] or 0
         logger.debug("Task %s current step=%s", task_id, step)
 
-        if step == 0:
-            bump_step_and_reschedule(task_id, step + 1)
-            return
-
         if step in (1, 2, 3):
             user_info = get_responsible(task_id, token)
             send_comment(token, task_id, Texts.TEXT_TO_EMPLOYEE, user_info)
@@ -52,6 +49,9 @@ def process_task(task_id: int, token: str):
         if step == 4:
             first_manager_info = get_member(settings.FIRST_MANAGER_ID, token)
             second_manager_info = get_member(settings.SECOND_MANAGER_ID, token)
+            if not first_manager_info or not second_manager_info:
+                raise APIError("Manager info not found")
+
             manager_info = {
                 "first_manager": first_manager_info,
                 "second_manager": second_manager_info
