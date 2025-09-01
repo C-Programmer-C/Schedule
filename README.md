@@ -27,5 +27,6 @@ pip install -r requirements.txt
 Для запуска приложения достаточно в терминале использовать команду:
 Linux / macOS:
 python3 -m app.main
+
 Windows (PowerShell):
 py -m app.main
