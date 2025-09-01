@@ -1,11 +1,11 @@
-# NotificationScheduler
-
+# Scheduler
+Простой планировщик задач для CRM Pyrus на Python.
 ## 🚀 Установка и запуск
 
 ### 1. Клонировать проект
 
-git clone https://github.com/your-repo/NotificationScheduler.git
-cd NotificationScheduler
+git clone https://github.com/C-Programmer-C/Schedule.git
+cd Schedule
 
 ### 2. Создать виртуальное окружение
 python -m venv venv
@@ -24,8 +24,8 @@ pip install -r requirements.txt
 Создать файл .env в корне проекта.
 
 ### 6. Запуск приложения
-Проект состоит из двух процессов, которые должны работать параллельно:
-  Основной сервер (Flask + Waitress):
-  python app/main.py
-  Фоновый воркер (обработка задач):
-  python app/scan_tasks.py
+Для запуска приложения достаточно в терминале использовать команду:
+Linux / macOS:
+python3 -m app.main
+Windows (PowerShell):
+py -m app.main
