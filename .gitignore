@@ -1,0 +1,6 @@
+.env
+*.log
+*.db
+launch.json
+*.xml
+.idea
