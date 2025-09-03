@@ -8,6 +8,10 @@ git clone https://github.com/C-Programmer-C/Schedule.git
 cd Schedule
 
 ### 2. Создать виртуальное окружение
+Linux / macOS:
+python3 -m venv venv
+
+Windows (PowerShell):
 python -m venv venv
 
 ### 3. Активировать виртуальное окружение
