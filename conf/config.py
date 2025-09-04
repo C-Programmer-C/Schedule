@@ -14,7 +14,11 @@ class Settings(BaseSettings):
     LIMIT_PROCESS_TASKS: int
     BOT_ID: int
     PORT: int = 8080
-
+    SUBJECT_FORM_ID: int
+    CLIENT_FIELD_ID: int
+    LOGIN_ADNIN: str
+    SECURITY_KEY_ADMIN: str
+    
     class Config:
         env_file = str(Path(__file__).resolve().parent.parent / ".env")
 

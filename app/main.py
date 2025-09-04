@@ -1,3 +1,4 @@
+from app.subject import set_user_to_task
 from conf.logging_config import conf_logger
 import logging
 import sqlite3
@@ -40,8 +41,17 @@ def webhook():
     if not task_id:
         return log_and_abort("task_id not found")
 
-    logger.info("get new task #%s", task_id)
+    logger.info(f"get new task #{task_id}")
 
+    # form_id = task.get("form_id")
+    
+    # if not form_id:
+    #     return log_and_abort("form_id not found")
+    
+    # if form_id == settings.SUBJECT_FORM_ID:
+    #     set_user_to_task(task, task_id)
+    #     return "", 200
+    
     duration_minutes = task.get("duration")
 
     due = task.get("due") or task.get("due_date")

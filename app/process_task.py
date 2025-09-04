@@ -1,10 +1,11 @@
 import logging
 
+from app.cleanup_data import cleanup_task
 from app.lock_utils import unlock_task
 from app.pyrus_api import get_responsible, get_member, bot_is_subscriber, remove_bot_from_subscribers, get_task, \
     APIError
 from app.texts import Texts
-from app.db_utils import cleanup_task
+
 from conf.config import settings
 from app.db_utils import delete_task, get_task_row, bump_step_and_reschedule
 from app.pyrus_api import send_comment, is_task_closed

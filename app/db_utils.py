@@ -2,11 +2,8 @@ import logging
 from datetime import datetime, timezone, timedelta, time
 from typing import List
 from zoneinfo import ZoneInfo
-
 from app.db_connect import db_connect
-from app.pyrus_api import remove_bot_from_subscribers
 from app.utils import now_utc, to_iso
-
 from conf.config import settings
 
 logger = logging.getLogger(__name__)
@@ -28,11 +25,6 @@ def init_db():
     finally:
         conn.close()
 
-
-def cleanup_task(task_id: int, token: str, reason: str):
-    delete_task(task_id)
-    remove_bot_from_subscribers(task_id, token)
-    logger.info("Task %s removed from DB and unsubscribed (reason: %s).", task_id, reason)
 
 def insert_task(task_id: str, due_iso: str, next_run: str):
     conn = db_connect()
@@ -168,8 +160,8 @@ def delete_task(task_id: int):
 
 def bump_step_and_reschedule(task_id: int, step: int, tz_name: str = "Europe/Moscow"):
     """
-    Обновляет step и ставит next_run_at на ближайший будущий 11:00 по tz_name (MSK по умолчанию).
-    Всегда игнорирует любые относительные offsets — всегда назначаем 11:00.
+    Обновляет step и ставит next_run_at на ближайший будущий 11:30 по tz_name (MSK по умолчанию).
+    Всегда игнорирует любые относительные offsets — всегда назначаем 11:30.
     """
     conn = db_connect()
     try:
@@ -180,16 +172,16 @@ def bump_step_and_reschedule(task_id: int, step: int, tz_name: str = "Europe/Mos
             tz = timezone.utc
 
         now_local = datetime.now(tz)
-        today_1100 = datetime.combine(now_local.date(), time(11, 00), tzinfo=tz)
+        today_1130 = datetime.combine(now_local.date(), time(11, 30), tzinfo=tz)
 
-        next_local = today_1100 + timedelta(days=1)
+        next_local = today_1130 + timedelta(days=1)
 
         next_run_utc = next_local.astimezone(timezone.utc)
 
         logger.debug(
             "[task_id=%s] next_run_local=%s (%s) | next_run_utc=%s | now_local=%s | now_utc=%s",
             task_id,
-            next_local.isoformat(), tz.key,
+            next_local.isoformat(), tz.key, # type: ignore
             next_run_utc.isoformat(),
             datetime.now(tz).isoformat(),
             datetime.now(timezone.utc).isoformat()

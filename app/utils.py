@@ -1,17 +1,38 @@
 import logging
 from datetime import datetime, timedelta, timezone
-from typing import Dict, List, Optional, Union, Any
-
+from typing import Dict, Iterable, List, Mapping, Optional, Union, Any
 from conf.config import settings
 from flask import jsonify
 
 logger = logging.getLogger(__name__)
 
-
 def now_utc():
     return datetime.now(timezone.utc)
 
+def check_client(fields: Iterable[Mapping[str, Any]],
+                 client_field_id: int = settings.CLIENT_FIELD_ID) -> bool:
+    """
+    Вернёт True, если среди полей есть поле с id == client_field_id,
+    у которого в value присутствует непустой task_id.
+    Иначе вернёт False.
+    """
+    for field in fields:
+        if not isinstance(field, Mapping):
+            continue
 
+        if field.get("id") != client_field_id:
+            continue
+
+        value = field.get("value") or {}
+        if not isinstance(value, Mapping):
+            continue
+
+        task_id = value.get("task_id")
+        if task_id:
+            return True
+    return False
+                
+            
 def to_iso(dt: datetime) -> str:
     return dt.astimezone(timezone.utc).isoformat()
 
@@ -74,22 +95,29 @@ def add_interval_to_due(
 def normalize_due(due: str) -> Optional[str]:
     """
     Преобразует due в ISO формат с временем в UTC.
-    Если пришла только дата (YYYY-MM-DD), добавляет время 00:00:00.
+    
+    Поддерживает:
+    - только дату "YYYY-MM-DD" -> добавляется 00:00:00
+    - ISO с временем "YYYY-MM-DDTHH:MM:SS" или с часовым поясом
+    
+    Возвращает ISO строку в UTC или None, если due пустой.
     """
     if not due:
         return None
 
     try:
-        # Сначала пробуем разобрать как полный ISO
-        dt = datetime.fromisoformat(due)
+        # Обработка ISO формата с Z или с часовым поясом
+        if due.endswith("Z"):
+            dt = datetime.fromisoformat(due.replace("Z", "+00:00"))
+        else:
+            dt = datetime.fromisoformat(due)
     except ValueError:
-        # Если ValueError, пробуем как YYYY-MM-DD
+        # Если не ISO, пробуем как YYYY-MM-DD
         dt = datetime.strptime(due, "%Y-%m-%d")
-
-    # Переводим в UTC и ISO
-    if dt.tzinfo is None:
         dt = dt.replace(tzinfo=timezone.utc)
-    else:
+
+    # Переводим в UTC, если есть tzinfo
+    if dt.tzinfo is not None:
         dt = dt.astimezone(timezone.utc)
 
     return dt.isoformat()

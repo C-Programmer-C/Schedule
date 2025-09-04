@@ -194,7 +194,7 @@ def get_token(login: str, security_key: str, timeout: int = 30) -> str:
 def is_task_closed(task_id: int, token: str, timeout: int = 30) -> bool:
     task = get_task(task_id, token, timeout)
     if not isinstance(task, dict):
-        logger.warning("Could not retrieve task %s or task is not a dictionary.", task_id)
+        logger.warning(f"Could not retrieve task #{task_id} or task is not a dictionary.")
         raise APIError(f"Could not retrieve task details for task #{task_id}")
     return bool(task.get("close_date") or task.get("is_closed"))
 
@@ -222,11 +222,11 @@ def get_member(task_id: int, token: str, timeout: int = 30) -> dict:
     last_name = data.get("last_name")
 
     if not user_id:
-        raise APIError(f"The API response does not contain the employee's 'id'.: {data}")
+        raise APIError(f"The API response in task #{task_id} does not contain the employee's 'id'.: {data}")
 
     fullname = " ".join(filter(None, [first_name, last_name]))
     if not fullname:
-        raise APIError(f"The API response does not contain the employee's full name: {data}")
+        raise APIError(f"The API response in task #{task_id} does not contain the employee's full name: {data}")
 
     return {
         "id": user_id,
@@ -273,11 +273,11 @@ def get_responsible(task_id: int, token: str, timeout: int = 30) -> dict:
     last_name = responsible.get("last_name")
 
     if not user_id:
-        raise APIError(f"The API response does not contain the employee's 'id'.: {responsible}")
+        raise APIError(f"The API response in task #{task_id} does not contain the employee's 'id'.: {responsible}")
 
     fullname = " ".join(filter(None, [first_name, last_name]))
     if not fullname:
-        raise APIError(f"The API response does not contain the employee's full name: {responsible}")
+        raise APIError(f"The API response in task #{task_id} does not contain the employee's full name: {responsible}")
 
     return {
         "id": user_id,
@@ -302,12 +302,39 @@ def add_managers_to_subscribers(task_id: int, token: str, ids_approvals: List[di
     data = parse_json_response(resp, context="comments")
 
     if "task" in data and data["task"]:
-        logger.info("managers successfully added to subscribers.")
+        logger.info(f"managers successfully added to subscribers in task #{task_id}.")
         return True
 
-    raise APIError(f"Couldn't send comment: invalid API response #{task_id}: {data}")
+    raise APIError(f"Couldn't add managers: invalid API response #{task_id}: {data}")
 
-
+@retry_on_exception(tries=3, delay=30,
+                    exceptions=(RuntimeError, requests.RequestException), unlock_on_fail=True)
+def update_client(parent_task_id: int, token: str, task_id: int, timeout: int = 30):
+    headers = {"Authorization": f"Bearer {token}"}
+    url = build_comments_api_url(task_id)
+    
+    body = {
+        "field_updates": [
+            {
+                "id": settings.CLIENT_FIELD_ID,
+                "value": parent_task_id
+            }
+        ]
+    }
+    
+    try:
+        resp = requests.post(url, headers=headers, timeout=timeout, json=body)
+        resp.raise_for_status()
+    except requests.RequestException as e:
+        raise APIError(f"Couldn't update client for the issue #{task_id}: {e}") from e
+    
+    data = parse_json_response(resp, context="comments")
+    if "task" in data and data["task"]:
+        logger.info(f"client successfully updated in task #{task_id}.")
+        return True
+    
+    raise APIError(f"Couldn't update client: invalid API response #{task_id}: {data}")
+    
 @retry_on_exception(
     tries=3,
     delay=30.0,
