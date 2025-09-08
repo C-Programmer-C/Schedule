@@ -169,6 +169,8 @@ def bot_is_subscriber(task_id: int, token: str, timeout: int = 30) -> bool:
     return False
 
 
+
+
 @retry_on_exception(tries=3, delay=30,
                     exceptions=(RuntimeError, requests.RequestException))
 def get_token(login: str, security_key: str, timeout: int = 30) -> str:
@@ -317,7 +319,10 @@ def update_client(parent_task_id: int, token: str, task_id: int, timeout: int = 
         "field_updates": [
             {
                 "id": settings.CLIENT_FIELD_ID,
-                "value": parent_task_id
+                "value": {
+                "task_id": { parent_task_id
+                }
+                }
             }
         ]
     }

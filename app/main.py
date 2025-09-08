@@ -43,14 +43,18 @@ def webhook():
 
     logger.info(f"get new task #{task_id}")
 
-    # form_id = task.get("form_id")
+    form_id = task.get("form_id")
     
-    # if not form_id:
-    #     return log_and_abort("form_id not found")
+    if not form_id:
+        return log_and_abort("form_id not found")
     
-    # if form_id == settings.SUBJECT_FORM_ID:
-    #     set_user_to_task(task, task_id)
-    #     return "", 200
+    if form_id == settings.SUBJECT_FORM_ID:
+        try:
+            set_user_to_task(task, task_id)
+        except Exception:
+            logger.exception(f"failed to try set user to task #{task_id}")
+        finally:
+            return "", 200
     
     duration_minutes = task.get("duration")
 

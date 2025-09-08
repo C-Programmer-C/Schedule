@@ -4,3 +4,5 @@
 launch.json
 *.xml
 .idea
+tasks.db-shm
+tasks.db-wal
