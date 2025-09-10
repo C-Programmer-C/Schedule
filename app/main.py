@@ -9,6 +9,7 @@ from waitress import serve
 
 from app.db_utils import has_task, init_db, insert_task 
 from app.utils import (  
+    check_client,
     create_iso_date_with_duration,
     last_comment_has_bot,
     log_and_abort,
@@ -43,18 +44,36 @@ def webhook():
 
     logger.info(f"get new task #{task_id}")
 
-    # form_id = task.get("form_id")
+    form_id = task.get("form_id")
     
-    # if not form_id:
-    #     return log_and_abort("form_id not found")
+    if not form_id:
+        return log_and_abort("form_id not found")
     
-    # if form_id == settings.SUBJECT_FORM_ID:
-    #     try:
-    #         set_user_to_task(task, task_id)
-    #     except Exception:
-    #         logger.exception(f"failed to try set user to task #{task_id}")
-    #     finally:
-    #         return "", 200
+    fields = task.get("fields")
+    if not fields:
+        return log_and_abort("fields not found")
+        
+    if form_id == settings.SUBJECT_FORM_ID:
+        try:
+            has_client = check_client(fields)
+            
+            if has_client:
+                logger.warning(f"client already is existing in task #{task_id}")
+                return "", 200
+            
+            parent_task_id = task.get("parent_task_id")
+            
+            if not parent_task_id:
+                logger.warning(f"parent_task_id is missing in task #{task_id}")
+                return "", 200
+            
+            set_user_to_task(parent_task_id, task_id)
+            
+            return "", 200
+            
+        except Exception:
+            logger.exception(f"failed to try set user to task #{task_id}")
+            return "", 200       
     
     duration_minutes = task.get("duration")
 
