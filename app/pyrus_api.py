@@ -320,8 +320,8 @@ def update_client(parent_task_id: int, token: str, task_id: int, timeout: int = 
             {
                 "id": settings.CLIENT_FIELD_ID,
                 "value": {
-                "task_id": { parent_task_id
-                }
+                "task_id":  parent_task_id
+                
                 }
             }
         ]
