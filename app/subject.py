@@ -5,7 +5,7 @@ from conf.config import settings
 
 logger = logging.getLogger(__name__)
 
-def set_user_to_task(parent_task_id: int, task_id: int):
+def set_client_to_task(parent_task_id: int, task_id: int):
 
     try:
         token = get_token(settings.LOGIN_ADNIN, settings.SECURITY_KEY_ADMIN)

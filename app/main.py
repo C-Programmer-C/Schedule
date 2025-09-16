@@ -1,4 +1,4 @@
-from app.subject import set_user_to_task
+from app.subject import set_client_to_task
 from conf.logging_config import conf_logger
 import logging
 import sqlite3
@@ -67,7 +67,7 @@ def webhook():
                 logger.warning(f"parent_task_id is missing in task #{task_id}")
                 return "", 200
             
-            set_user_to_task(parent_task_id, task_id)
+            set_client_to_task(parent_task_id, task_id)
             
             return "", 200
             
