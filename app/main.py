@@ -46,14 +46,11 @@ def webhook():
 
     form_id = task.get("form_id")
     
-    if not form_id:
-        return log_and_abort("form_id not found")
-    
     fields = task.get("fields")
     if not fields:
         return log_and_abort("fields not found")
         
-    if form_id == settings.SUBJECT_FORM_ID:
+    if form_id and form_id == settings.SUBJECT_FORM_ID:
         try:
             has_client = check_client(fields)
             
